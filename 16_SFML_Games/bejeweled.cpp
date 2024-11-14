@@ -7,7 +7,7 @@ Vector2i gridOffset(48,24);  // Offset to position the grid on the window
 
 
 struct GemTile
-{ int pixelX,pixelY,gridCol,gridRow,gemType,matchFlag,opacity;
+{ //int pixelX,pixelY,gridCol,gridRow,gemType,matchFlag,opacity;
 
 int pixelX, pixelY; //x and y Pixel position of the tile
 int gridCol, gridRow;//col and row The grid coordinates (column and row) of the tile
@@ -35,8 +35,8 @@ void initializeGrid()
             gameGrid[row][col].gemType = rand() % 3;
             gameGrid[row][col].gridCol = col;
             gameGrid[row][col].gridRow = row;
-            gameGrid[row][col].pixelX = col * TILE_SIZE;
-            gameGrid[row][col].pixelY = row * TILE_SIZE;
+            gameGrid[row][col].pixelX = col * TITEL_SIZE;
+            gameGrid[row][col].pixelY = row * TITEL_SIZE;
         }
 }
 
@@ -56,13 +56,13 @@ bool handleInput(RenderWindow& gameWindow, int& clickCount, Vector2i& mousePos, 
 
             if (clickCount == 1)
             {
-                selectedCol1 = mousePos.x / TILE_SIZE + 1;
-                selectedRow1 = mousePos.y / TILE_SIZE + 1;
+                selectedCol1 = mousePos.x / TITEL_SIZE + 1;
+                selectedRow1 = mousePos.y / TITEL_SIZE + 1;
             }
             else if (clickCount == 2)
             {
-                selectedCol2 = mousePos.x / TILE_SIZE + 1;
-                selectedRow2 = mousePos.y / TILE_SIZE + 1;
+                selectedCol2 = mousePos.x / TITEL_SIZE + 1;
+                selectedRow2 = mousePos.y / TITEL_SIZE + 1;
 
                 if (abs(selectedCol2 - selectedCol1) + abs(selectedRow2 - selectedRow1) == 1)
                 {
@@ -107,8 +107,8 @@ bool animateTileMovement()
         for (int col = 1; col <= 8; col++)
         {
             GemTile& tile = gameGrid[row][col];
-            int deltaX = tile.pixelX - tile.gridCol * TILE_SIZE;
-            int deltaY = tile.pixelY - tile.gridRow * TILE_SIZE;
+            int deltaX = tile.pixelX - tile.gridCol * TITEL_SIZE;
+            int deltaY = tile.pixelY - tile.gridRow * TITEL_SIZE;
             if (deltaX) tile.pixelX -= deltaX / abs(deltaX);
             if (deltaY) tile.pixelY -= deltaY / abs(deltaY);
             if (deltaX || deltaY) isMoving = true;
@@ -128,7 +128,7 @@ bool animateMatchDeletion()
             }
     return isMoving;
 }
-oid updateGridAfterMatch()
+void updateGridAfterMatch()
 {
     for (int col = 1; col <= 8; col++)
     {
@@ -139,7 +139,7 @@ oid updateGridAfterMatch()
             {
                 emptyTilesAbove++;
                 gameGrid[row][col].gemType = rand() % 7;
-                gameGrid[row][col].pixelY = -TILE_SIZE * emptyTilesAbove;
+                gameGrid[row][col].pixelY = -TITEL_SIZE * emptyTilesAbove;
                 gameGrid[row][col].matchFlag = 0;
                 gameGrid[row][col].opacity = 255;
             }
@@ -161,7 +161,7 @@ void renderGame(RenderWindow& gameWindow, Sprite& backgroundSprite, Sprite& gemS
             gemSprite.setTextureRect(IntRect(tile.gemType * 49, 0, 49, 49));
             gemSprite.setColor(Color(255, 255, 255, tile.opacity));
             gemSprite.setPosition(tile.pixelX, tile.pixelY);
-            gemSprite.move(gridOffset.x - TILE_SIZE, gridOffset.y - TILE_SIZE);
+            gemSprite.move(gridOffset.x - TITEL_SIZE, gridOffset.y - TITEL_SIZE);
             gameWindow.draw(gemSprite);
         }
 }
@@ -189,7 +189,7 @@ int mainGameLoop()//main
 
     while (gameWindow.isOpen())
     {
-        if (handleInput(gameWindow, clickCount, mousePos, isSwapping, selectedCol1, selectedRow1, selectedCol2, selectedRow2))
+        if (handleInput(gameWindow, click, pos, isSwap, selectedCol1, selectedRow1, selectedCol2, selectedRow2))
         {
             findMatches();
         }
@@ -198,7 +198,7 @@ int mainGameLoop()//main
         if (!isMoving)
         {
             bool isDeleting = animateMatchDeletion();
-            if (!isDeleting && isSwapping)
+            if (!isDeleting && isSwap)
             {
                 int score=0;
                 for (int i=1;i<=8;i++)
@@ -208,14 +208,14 @@ int mainGameLoop()//main
    //Second swap if no match
                    if (!score)
                     swapTiles(gameGrid[selectedRow1][selectedCol1],gameGrid[selectedRow2][selectedCol2]); isSwap=0;
-                isSwapping = false;
+                isSwap = false;
             }
 
             if (!isDeleting)
                 updateGridAfterMatch();
         }
 
-        renderGame(gameWindow, backgroundSprite, gemSprite);
+        renderGame(gameWindow, background, gems);
         gameWindow.display();
 
     }
