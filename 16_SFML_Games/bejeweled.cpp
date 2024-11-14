@@ -2,168 +2,173 @@
 #include <time.h>
 using namespace sf;
 
-int ts = 54;  // Tile size (each tile is 54x54 pixels)
-Vector2i offset(48,24);  // Offset to position the grid on the window
+const int TITEL_SIZE = 54;  // Tile size (each tile is 54x54 pixels)
+Vector2i gridOffset(48,24);  // Offset to position the grid on the window
 
 
-struct piece
-{ int x,y,col,row,kind,match,alpha;
+struct GemTile
+{ int pixelX,pixelY,gridCol,gridRow,gemType,matchFlag,opacity;
+
+
+
+
+
 //x and y Pixel position of the tile
 //col and row The grid coordinates (column and row) of the tile
 //kind Type of gem (integer representing different gem types)
 //match Tracks if a tile is part of a match (1 or more if matched)
 //alpha Opacity of the tile, used for fade-out animations
-  piece(){match=0; alpha=255;}
-} grid[10][10];
+  GemTile(){matchFlag=0; opacity=255;}
+} gameGrid[10][10];
 
-void swap(piece p1,piece p2)// Function to swap two tiles in the grid
+void swapTiles(GemTile firstTile,GemTile secondTile)// Function to swap two tiles in the grid
 {
-  std::swap(p1.col,p2.col);// Swap their column and row positions
-  std::swap(p1.row,p2.row);
+  std::swap(firstTile.gridCol,secondTile.gridCol);// Swap their column and row positions
+  std::swap(firstTile.gridRow,secondTile.gridRow);
 
-  grid[p1.row][p1.col]=p1;// Update the grid with the new positions of each piece
-  grid[p2.row][p2.col]=p2;
+  gameGrid[firstTile.gridRow][firstTile.gridCol]=firstTile;// Update the grid with the new positions of each piece
+  gameGrid[secondTile.gridRow][secondTile.gridCol]=secondTile;
 }
 
 
-int bejeweled()//main
+int mainGameLoop()//main
 {
     srand(time(0));//random generator seed.
 
-    RenderWindow app(VideoMode(740,480), "Match-3 Game!");//game window with size 740x480 pixels 
-    app.setFramerateLimit(60);
+    RenderWindow gameWindow(VideoMode(740,480), "Match-3 Game!");//game window with size 740x480 pixels 
+    gameWindow.setFramerateLimit(60);
 
-    Texture t1,t2;
-    t1.loadFromFile("images/bejeweled/background.png");
-    t2.loadFromFile("images/bejeweled/gems.png");
+    Texture backgroundTexture,gemTexture;
+    backgroundTexture.loadFromFile("images/bejeweled/background.png");
+    gemTexture.loadFromFile("images/bejeweled/gems.png");
 
-    Sprite background(t1), gems(t2);
+    Sprite background(backgroundTexture), gems(gemTexture);
 
-    for (int i=1;i<=8;i++)//Initializing the Grid
-     for (int j=1;j<=8;j++)
+    for (int row=1; row <=8; row++)//Initializing the Grid
+     for (int col =1; col <=8; col++)
       {
-          grid[i][j].kind=rand()%3;//// Randomly assign a gem type
-          grid[i][j].col=j;
-          grid[i][j].row=i;
-          grid[i][j].x = j*ts;
-          grid[i][j].y = i*ts;
+          gameGrid[row][col].gemType=rand()%3;//// Randomly assign a gem type
+          gameGrid[row][col].gridCol= col;
+          gameGrid[row][col].gridRow= row;
+          gameGrid[row][col].pixelX = col * TITEL_SIZE;
+          gameGrid[row][col].pixelY = row * TITEL_SIZE;
       }
 
-    int x0,y0,x,y; int click=0; Vector2i pos;
+    int selectedCol1,selectedRow1,selectedCol2,selectedRow2; int click=0; Vector2i pos;
     bool isSwap=false, isMoving=false;
 
-    while (app.isOpen())//event handling
+    while (gameWindow.isOpen())//event handling
     {
-        Event e;
-        while (app.pollEvent(e))
+        Event event;
+        while (gameWindow.pollEvent(event))
         {
-            if (e.type == Event::Closed)
-                app.close();
+            if (event.type == Event::Closed)
+                gameWindow.close();
                    
-            if (e.type == Event::MouseButtonPressed)
-                if (e.key.code == Mouse::Left)
+            if (event.type == Event::MouseButtonPressed)
+                if (event.key.code == Mouse::Left)
                 {
                    if (!isSwap && !isMoving) click++;
-                   pos = Mouse::getPosition(app)-offset;
+                   pos = Mouse::getPosition(gameWindow)-gridOffset;
                 }
          }
     
    if (click==1)//Handling Tile Selection and Swapping
     {// First click to select a tile
-      x0=pos.x/ts+1;
-      y0=pos.y/ts+1;
+      selectedCol1=pos.x/ TITEL_SIZE +1;
+      selectedRow1=pos.y/ TITEL_SIZE +1;
     }
    if (click==2)// Second click to select a second tile
     {
-      x=pos.x/ts+1;
-      y=pos.y/ts+1;
-      if (abs(x-x0)+abs(y-y0)==1)
-        {swap(grid[y0][x0],grid[y][x]); isSwap=1; click=0;} // Swap the two selected tiles
+      selectedCol2=pos.x/ TITEL_SIZE +1;
+      selectedRow2=pos.y/ TITEL_SIZE +1;
+      if (abs(selectedCol2-selectedCol1)+abs(selectedRow2-selectedRow1)==1)
+        {swapTiles(gameGrid[selectedRow1][selectedCol1],gameGrid[selectedRow2][selectedCol2]); isSwap=1; click=0;} // Swap the two selected tiles
       else click=1;
     }
 
    //Match finding both vertically and horizontally.
-   for(int i=1;i<=8;i++)
-   for(int j=1;j<=8;j++)
+   for(int row =1; row <=8; row++)
+   for(int col=1; col <=8; col++)
    {
-    if (grid[i][j].kind==grid[i+1][j].kind)
-    if (grid[i][j].kind==grid[i-1][j].kind)
-     for(int n=-1;n<=1;n++) grid[i+n][j].match++;
+    if (gameGrid[row][col].gemType==gameGrid[row +1][col].gemType)
+    if (gameGrid[row][col].gemType==gameGrid[row -1][col].gemType)
+     for(int offset=-1;offset<=1;offset++) gameGrid[row +offset][col].matchFlag++;
 
-    if (grid[i][j].kind==grid[i][j+1].kind)
-    if (grid[i][j].kind==grid[i][j-1].kind)
-     for(int n=-1;n<=1;n++) grid[i][j+n].match++;
+    if (gameGrid[row][col].gemType==gameGrid[row][col +1].gemType)
+    if (gameGrid[row][col].gemType==gameGrid[row][col -1].gemType)
+     for(int offset=-1;offset<=1;offset++) gameGrid[row][col +offset].matchFlag++;
    }
 
    //Moving animation
    isMoving=false;// Reset moving flag
-   for (int i=1;i<=8;i++)
-    for (int j=1;j<=8;j++)
+   for (int row=1;row<=8;row++)
+    for (int col=1;col<=8;col++)
      {
-       piece &p = grid[i][j];
+       GemTile &pixelX = gameGrid[row][col];
        int dx,dy;
        for(int n=0;n<4;n++)   // 4 - speed
-       {dx = p.x-p.col*ts;
-        dy = p.y-p.row*ts;
-        if (dx) p.x-=dx/abs(dx);// Move tile horizontally
-        if (dy) p.y-=dy/abs(dy);}// Move tile vertically
+       {dx = pixelX.pixelX-pixelX.gridCol* TITEL_SIZE;
+        dy = pixelX.pixelY-pixelX.gridRow* TITEL_SIZE;
+        if (dx) pixelX.pixelX-=dx/abs(dx);// Move tile horizontally
+        if (dy) pixelX.pixelY-=dy/abs(dy);}// Move tile vertically
        if (dx||dy) isMoving=1;
      }
 
    //Deleting amimation if match
    if (!isMoving)
-    for (int i=1;i<=8;i++)
+    for (int row=1;row<=8;row++)
     for (int j=1;j<=8;j++)
-    if (grid[i][j].match)
-        if (grid[i][j].alpha>10)
-        {grid[i][j].alpha-=10; isMoving=true;}//Fades out tiles that are part of a match by reducing their alpha value.
+    if (gameGrid[row][j].matchFlag)
+        if (gameGrid[row][j].opacity>10)
+        {gameGrid[row][j].opacity-=10; isMoving=true;}//Fades out tiles that are part of a match by reducing their alpha value.
 
    //Get score
    int score=0;
    for (int i=1;i<=8;i++)
-    for (int j=1;j<=8;j++)
-      score+=grid[i][j].match;// extra score for each match
+    for (int col=1;col<=8;col++)
+      score+=gameGrid[i][col].matchFlag;// extra score for each match
 
    //Second swap if no match
    if (isSwap && !isMoving)
-      {if (!score) swap(grid[y0][x0],grid[y][x]); isSwap=0;}
+      {if (!score) swapTiles(gameGrid[selectedRow1][selectedCol1],gameGrid[selectedRow2][selectedCol2]); isSwap=0;}
 
    //Drops unmatched tiles down to fill empty spaces 
    if (!isMoving)
     {
-      for(int i=8;i>0;i--)
-       for(int j=1;j<=8;j++)
-         if (grid[i][j].match)
-         for(int n=i;n>0;n--)
-            if (!grid[n][j].match) {swap(grid[n][j],grid[i][j]); break;};
+      for(int row=8;row>0;row--)
+       for(int col=1;col<=8;col++)
+         if (gameGrid[row][col].matchFlag)
+         for(int aboveRow=row;aboveRow>0;aboveRow--)
+            if (!gameGrid[aboveRow][col].matchFlag) {swapTiles(gameGrid[aboveRow][col],gameGrid[row][col]); break;};
 
-      for(int j=1;j<=8;j++)
-       for(int i=8,n=0;i>0;i--)
-         if (grid[i][j].match)
+      for(int col=1;col<=8;col++)
+       for(int row=8,newGemCount=0;row>0;row--)
+         if (gameGrid[row][col].matchFlag)
            {
-            grid[i][j].kind = rand()%7;
-            grid[i][j].y = -ts*n++;
-            grid[i][j].match=0;
-            grid[i][j].alpha = 255;
+            gameGrid[row][col].gemType = rand()%7;
+            gameGrid[row][col].pixelY = -TITEL_SIZE *newGemCount++;
+            gameGrid[row][col].matchFlag=0;
+            gameGrid[row][col].opacity = 255;
            }
      }
 
 
     //////draw///////
-    app.draw(background);
+    gameWindow.draw(background);
     //Draws the background and each gem tile,
-    for (int i=1;i<=8;i++)
-     for (int j=1;j<=8;j++)
+    for (int row=1;row<=8;row++)
+     for (int col=1;col<=8;col++)
       {
-        piece p = grid[i][j];
-        gems.setTextureRect( IntRect(p.kind*49,0,49,49));
-        gems.setColor(Color(255,255,255,p.alpha));
-        gems.setPosition(p.x,p.y);
-        gems.move(offset.x-ts,offset.y-ts);
-        app.draw(gems);
+        GemTile pixelX = gameGrid[row][col];
+        gems.setTextureRect( IntRect(pixelX.gemType*49,0,49,49));
+        gems.setColor(Color(255,255,255,pixelX.opacity));
+        gems.setPosition(pixelX.pixelX,pixelX.pixelY);
+        gems.move(gridOffset.x- TITEL_SIZE,gridOffset.y- TITEL_SIZE);
+        gameWindow.draw(gems);
       }
 
-     app.display();
+     gameWindow.display();
     }
     return 0;
 }
