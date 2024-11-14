@@ -2,7 +2,17 @@
 #include <time.h>
 using namespace sf;
 
-const int TITEL_SIZE = 54;  // Tile size (each tile is 54x54 pixels)
+const int TITEL_SIZE = 54;
+const int GRID_ROWS = 8;                // Number of rows in the game grid
+const int GRID_COLS = 8;                // Number of columns in the game grid
+const int GEM_TYPES = 7;                // Number of different gem types
+const int GEM_SPRITE_SIZE = 49;         // Size of each gem sprite in the texture
+const int WINDOW_WIDTH = 740;           // Width of the game window
+const int WINDOW_HEIGHT = 480;          // Height of the game window
+const int FRAME_RATE_LIMIT = 60;        // Frame rate limit for the game
+const int MIN_OPACITY = 10;             // Minimum opacity for tile fading
+const int OPACITY_DECREASE_RATE = 10;
+// Tile size (each tile is 54x54 pixels)
 Vector2i gridOffset(48,24);  // Offset to position the grid on the window
 
 
@@ -15,8 +25,8 @@ int gemType;//kind Type of gem (integer representing different gem types)
 int matchFlag;//match Tracks if a tile is part of a match (1 or more if matched)
 int opacity;//alpha Opacity of the tile, used for fade-out animations
 
-  GemTile(){matchFlag=0; opacity=255;}
-} gameGrid[10][10];
+GemTile() : matchFlag(0), opacity(255) {}
+} gameGrid[GRID_ROWS + 2][GRID_COLS + 2];
 
 void swapTiles(GemTile firstTile,GemTile secondTile)// Function to swap two tiles in the grid
 {
@@ -138,7 +148,7 @@ void updateGridAfterMatch()
             if (gameGrid[row][col].matchFlag)
             {
                 emptyTilesAbove++;
-                gameGrid[row][col].gemType = rand() % 7;
+                gameGrid[row][col].gemType = rand() % GEM_TYPES;
                 gameGrid[row][col].pixelY = -TITEL_SIZE * emptyTilesAbove;
                 gameGrid[row][col].matchFlag = 0;
                 gameGrid[row][col].opacity = 255;
@@ -158,7 +168,7 @@ void renderGame(RenderWindow& gameWindow, Sprite& backgroundSprite, Sprite& gemS
         for (int col = 1; col <= 8; col++)
         {
             GemTile tile = gameGrid[row][col];
-            gemSprite.setTextureRect(IntRect(tile.gemType * 49, 0, 49, 49));
+            gemSprite.setTextureRect(IntRect(tile.gemType * GEM_SPRITE_SIZE, 0, GEM_SPRITE_SIZE, GEM_SPRITE_SIZE)));
             gemSprite.setColor(Color(255, 255, 255, tile.opacity));
             gemSprite.setPosition(tile.pixelX, tile.pixelY);
             gemSprite.move(gridOffset.x - TITEL_SIZE, gridOffset.y - TITEL_SIZE);
